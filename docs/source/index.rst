@@ -31,10 +31,7 @@ Example code
 
 Here's an example showing the usage of :class:`~hyperclip.Hyperclip` for a 2-dimensional case.
 The result provided by Hyperclip is compared to a MonteCarlo volume estimation.
-
-
-.. plot::
-   :include-source:
+::
 
     import numpy as np
     import hyperclip
@@ -79,6 +76,11 @@ The result provided by Hyperclip is compared to a MonteCarlo volume estimation.
     plt.xlim([0,1])
     plt.ylim([0,1])
     plt.show()
+
+.. image:: figures/example_2d.png
+    :height: 400px
+    :align: center
+    :alt: example_2d
 
 .. toctree::
    :maxdepth: 2

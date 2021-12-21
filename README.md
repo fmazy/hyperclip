@@ -6,7 +6,7 @@ The documentation is available on [Read the Doc](https://hyperclip.readthedocs.i
 
 ## Installation
 
-Hyperclip is available through [PyPI](https://pypi.org/project/hyperclip/), and may be installed using ``pip``: ::
+Hyperclip is available through [PyPI](https://pypi.org/project/hyperclip/), and may be installed using `pip`: ::
 
    $ pip install hyperclip
 
@@ -14,15 +14,15 @@ Hyperclip is available through [PyPI](https://pypi.org/project/hyperclip/), and 
 
 The package is essentially composed by two classes : :class:`~hyperclip.Hyperplane` and :class:`~hyperclip.Hyperclip`.
 
-* ``hyperclip.Hyperplane`` allows users to create a n-dimensional hyperplane defined as :math:`a.x + r \geq 0`. It is possible to directly set :math:`a` and :math:`r` or to provide :math:`n` distinct points which belongs to the hyperplane, i.e :math:`a.x + r = 0`.
-* ``hyperclip.Hyperclip`` allows users to create an hyperclip object. It aims to compute the volume of :math:`A.X+R \leq 0` for :math:`X` inside the uniform hypercube :math:`[0,1]^n`. It is possible to directly set :math:`A` and :math:`R` or to set a list of ``hyperclip.Hyperplane`` objects.
+* `hyperclip.Hyperplane` allows users to create a n-dimensional hyperplane defined as `a.x + r \geq 0`. It is possible to directly set `a` and `r` or to provide `n` distinct points which belongs to the hyperplane, i.e `a.x + r = 0`.
+* `hyperclip.Hyperclip` allows users to create an hyperclip object. It aims to compute the volume of `A.X+R \leq 0` for `X` inside the uniform hypercube `[0,1]^n`. It is possible to directly set `A` and `R` or to set a list of `hyperclip.Hyperplane` objects.
 
 ## Example code
 
-Here's an example showing the usage of :class:`~hyperclip.Hyperclip` for a 2-dimensional case.
+Here's an example showing the usage of `hyperclip.Hyperclip` for a 2-dimensional case.
 The result provided by Hyperclip is compared to a MonteCarlo volume estimation.
 
-```python
+``python
 import numpy as np
 import hyperclip
 from matplotlib import pyplot as plt
@@ -66,7 +66,7 @@ plt.text(0.25,0.1, "Hyperclip : "+str(round(vol,4)))
 plt.xlim([0,1])
 plt.ylim([0,1])
 plt.show()
-```
+``
 
 ![example_figure](docs/source/figures/example_2d.png)
 

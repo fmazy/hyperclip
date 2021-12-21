@@ -78,6 +78,7 @@ The result provided by Hyperclip is compared to a MonteCarlo volume estimation.
     
     plt.xlim([0,1])
     plt.ylim([0,1])
+    plt.show()
 
 .. toctree::
    :maxdepth: 2

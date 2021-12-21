@@ -44,3 +44,4 @@ vol = hc.volume()
 
 plt.text(0.25,0.2, "10**6 MonteCarlo : "+str(round(id_pos_side.mean(),4)))
 plt.text(0.25,0.1, "Hyperclip : "+str(round(vol,4)))
+plt.show()

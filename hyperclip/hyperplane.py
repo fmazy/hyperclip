@@ -52,10 +52,7 @@ class Hyperplane():
 
     def distance(self, X, p=2):
         """
-        Computes the distance to the hyperplane according to the formula :
-
-        ..math::
-            d(x,p) = \frac{x \dot a + r}{\| a \|_2^2}\| a \|_p
+        Computes the distance to the hyperplane according to the formula :math:`d(x,p) = \\frac{x \centerdot a + r}{\| a \|_2^2}\| a \|_p`
 
         Parameters
         ----------
@@ -66,6 +63,7 @@ class Hyperplane():
         -------
         dist : array-like of shape (n_samples,).
             The computed distances.
+        
         """
         dist = np.abs(np.dot(X, self.a) + self.r) / np.linalg.norm(self.a, ord=2)**2 * np.linalg.norm(self.a, ord=p)
 

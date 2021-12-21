@@ -1,0 +1,11 @@
+LICENSE.txt
+README.md
+setup.py
+hyperclip/__init__.py
+hyperclip/hyperclip.py
+hyperclip/hyperplane.py
+hyperclip.egg-info/PKG-INFO
+hyperclip.egg-info/SOURCES.txt
+hyperclip.egg-info/dependency_links.txt
+hyperclip.egg-info/requires.txt
+hyperclip.egg-info/top_level.txt

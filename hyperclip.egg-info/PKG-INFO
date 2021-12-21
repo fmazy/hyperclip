@@ -1,0 +1,26 @@
+Metadata-Version: 2.1
+Name: hyperclip
+Version: 0.0.1
+Summary: Volume of Hypercubes Clipped by Hyperplanes
+Home-page: https://gitlab.inria.fr/fmazy/hyperclip
+Author: François-Rémi Mazy
+Author-email: francois-remi.mazy@inria.fr
+License: GNU GENERAL PUBLIC LICENSE
+Keywords: volume hypercube hyperplanes clip
+Platform: UNKNOWN
+Classifier: Development Status :: 1 - Planning
+Classifier: Intended Audience :: Science/Research
+Classifier: License :: OSI Approved :: GNU General Public License v3 (GPLv3)
+Classifier: Programming Language :: Python
+Classifier: Programming Language :: Python :: 3
+Classifier: Programming Language :: Python :: 3.6
+Classifier: Programming Language :: Python :: 3.7
+Classifier: Programming Language :: Python :: 3.8
+Classifier: Programming Language :: Python :: 3.9
+Classifier: Topic :: Scientific/Engineering :: Mathematics
+License-File: LICENSE.txt
+
+# hyperclip
+
+
+

@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 from setuptools import setup
 
-__version__ = "0.1.0"
+__version__ = "0.1.1"
 
 
 setup(
@@ -11,6 +11,11 @@ setup(
     author='François-Rémi Mazy',
     author_email='francois-remi.mazy@inria.fr',
     url='https://gitlab.inria.fr/fmazy/hyperclip',
+    project_urls={
+        'Documentation': 'https://hyperclip.readthedocs.io/en/latest/',
+        'Source Code': 'https://gitlab.inria.fr/fmazy/hyperclip',
+        'Bug Tracker': 'https://gitlab.inria.fr/fmazy/hyperclip/issues',
+    },
     packages=[ 'hyperclip', ],
     package_dir={
         'hyperclip' : 'hyperclip',

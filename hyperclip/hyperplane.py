@@ -5,7 +5,7 @@ import numpy as np
 
 class Hyperplane():
     """
-    Hyperplane object. Used for boundary bias correction within the GKDE method.
+    Hyperplane object defined as :math:`a.x + r \geq 0`.
     """
 
     def __init__(self,

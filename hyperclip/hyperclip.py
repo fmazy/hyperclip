@@ -7,7 +7,8 @@ import math
 
 class Hyperclip():
     """
-    Hyperclip class. All methods have been proposed by Yunhi Cho and Seonhwa Kim (see reference)
+    Hyperclip class. The volume computation has been proposed by Yunhi Cho and Seonhwa Kim (see reference).
+    Two methods are provided to configure hyperplanes : :meth:`~hyperclip.Hyperclip.set_A_r` and :meth:`~hyperclip.Hyperclip.set_hyperplanes`.
     
     Parameters
     ----------
@@ -18,8 +19,7 @@ class Hyperclip():
     
     References
     ----------
-    .. [1] `Cho, Yunhi and Kim, Seonhwa  (2020). "Volume of Hypercubes Clipped by Hyperplanes and Combinatorial Identities."
-         <https://doi.org/10.13001/ela.2020.5085>`_
+    .. [1] `Cho, Yunhi and Kim, Seonhwa  (2020). "Volume of Hypercubes Clipped by Hyperplanes and Combinatorial Identities." <https://doi.org/10.13001/ela.2020.5085>`_
     """
     def __init__(self,
                  zero=10**-7,
@@ -61,7 +61,7 @@ class Hyperclip():
 
         Parameters
         ----------
-        hyperplanes : list of Hyperplane
+        hyperplanes : list of :class:`~hyperclip.Hyperplane`
             A list of Hyperplanes objects.
 
         Returns

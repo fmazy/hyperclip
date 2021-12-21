@@ -7,7 +7,9 @@ from matplotlib import pyplot as plt
 n = 2
 m = 3
 
+np.random.seed(29)
 hyperplanes = [hyperclip.Hyperplane().set_by_points(np.random.random((n,n))) for i_m in range(m)]
+np.random.seed(None)
 
 X = np.random.random((10**6,n))
 
@@ -21,10 +23,7 @@ plt.scatter(X[id_pos_side, 0], X[id_pos_side, 1], s=2, color='gray')
 
 for hyp in hyperplanes:
     sol = hyp.compute_n_solutions()
-    x_a = sol[0,0]
-    x_b = sol[1,0]
-    y_a = sol[0,1]
-    y_b = sol[1,1]
+    x_a, y_a, x_b, y_b = sol.flat
     
     a = (y_b-y_a)/(x_b-x_a)
     b = y_a - x_a * a
@@ -34,11 +33,14 @@ for hyp in hyperplanes:
     
     plt.plot([0, 1], [y_0, y_1])
 
-plt.xlim([-0.1,1])
+plt.xlim([0,1])
 plt.ylim([0,1])
 
 
 hc = hyperclip.Hyperclip().set_hyperplanes(hyperplanes)
 
 vol = hc.volume()
-print('10**6 MonteCarlo : ', id_pos_side.mean(), 'Hyperclip :', vol)
+# print('10**6 MonteCarlo : ', id_pos_side.mean(), 'Hyperclip :', vol)
+
+plt.text(0.25,0.2, "10**6 MonteCarlo : "+str(round(id_pos_side.mean(),4)))
+plt.text(0.25,0.1, "Hyperclip : "+str(round(vol,4)))

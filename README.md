@@ -8,7 +8,7 @@ The documentation is available on [Read the Doc](https://hyperclip.readthedocs.i
 
 Hyperclip is available through [PyPI](https://pypi.org/project/hyperclip/), and may be installed using `pip` :
    
-   pip install hyperclip
+    pip install hyperclip
 
 ## Introduction
 

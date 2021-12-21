@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 from setuptools import setup
 
-__version__ = "0.1.1"
+__version__ = "0.1.2"
 
 
 setup(
@@ -25,7 +25,7 @@ setup(
         ],
 
     long_description=open('README.md').read(),
-
+    long_description_content_type = "text/markdown",
     license="GNU GENERAL PUBLIC LICENSE",
     classifiers=[
         'Development Status :: 1 - Planning',

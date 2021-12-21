@@ -68,3 +68,5 @@ plt.xlim([0,1])
 plt.ylim([0,1])
 plt.show()
 ```
+
+![example_figure](docs/source/figures/example_2d.png)

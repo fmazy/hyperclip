@@ -72,4 +72,4 @@ plt.show()
 
 ## Contact
 
-Please, send me an email at [francois-remi.mazy@inria.fr](francois-remi.mazy@inria.fr).
+Please, send me an email at [francois-remi.mazy@inria.fr](mailto:francois-remi.mazy@inria.fr).

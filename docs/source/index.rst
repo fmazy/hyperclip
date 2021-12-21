@@ -9,6 +9,8 @@ Hyperclip
 This Python 3.5+ package implements volume computation of hypercubes clipped by hyperplanes.
 All methods implemented here have been proposed by Yunhi Cho and Seonhwa Kim (2020) in the article `"Volume of Hypercubes Clipped by Hyperplanes and Combinatorial Identities." <https://doi.org/10.13001/ela.2020.5085>`_. An arxiv paper is available `here <https://arxiv.org/pdf/1512.07768.pdf>`_.
 
+The source code is available on the `Inria Gitlab instance <https://gitlab.inria.fr/fmazy/hyperclip>`_.
+
 Installation
 ------------
 
@@ -23,7 +25,6 @@ The package is essentially composed by two classes : :class:`~hyperclip.Hyperpla
 
 * :class:`~hyperclip.Hyperplane` allows users to create a n-dimensional hyperplane defined as :math:`a.x + r \geq 0`. It is possible to directly set :math:`a` and :math:`r` or to provide :math:`n` distinct points which belongs to the hyperplane, i.e :math:`a.x + r = 0`.
 * :class:`~hyperclip.Hyperclip` allows users to create an hyperclip object. It aims to compute the volume of :math:`A.X+R \leq 0` for :math:`X` inside the uniform hypercube :math:`[0,1]^n`. It is possible to directly set :math:`A` and :math:`R` or to set a list of :class:`~hyperclip.Hyperplane` objects.
-
 
 
 Example code

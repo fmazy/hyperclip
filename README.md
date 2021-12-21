@@ -6,7 +6,7 @@ The documentation is available on [Read the Doc](https://hyperclip.readthedocs.i
 
 ## Installation
 
-Hyperclip is available through [PyPI](https://pypi.org/project/hyperclip/), and may be installed using `pip`: ::
+Hyperclip is available through [PyPI](https://pypi.org/project/hyperclip/), and may be installed using `pip`:
 
    $ pip install hyperclip
 
@@ -22,7 +22,7 @@ The package is essentially composed by two classes : :class:`~hyperclip.Hyperpla
 Here's an example showing the usage of `hyperclip.Hyperclip` for a 2-dimensional case.
 The result provided by Hyperclip is compared to a MonteCarlo volume estimation.
 
-``python
+```python
 import numpy as np
 import hyperclip
 from matplotlib import pyplot as plt
@@ -66,7 +66,7 @@ plt.text(0.25,0.1, "Hyperclip : "+str(round(vol,4)))
 plt.xlim([0,1])
 plt.ylim([0,1])
 plt.show()
-``
+```
 
 ![example_figure](docs/source/figures/example_2d.png)
 

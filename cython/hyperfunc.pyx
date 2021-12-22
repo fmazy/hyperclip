@@ -85,27 +85,33 @@ cdef np.ndarray[double, ndim=1] compute_vertex(int n,
     cdef Py_ssize_t i, j
     
     # generate system
-    A_sys = np.zeros((card_K, card_I), dtype=np.double)
+    # A_sys is directly transposed
+    # in order to correspond to the classical gaussian solving AX = B.
+    A_sys = np.zeros((card_I, card_K), dtype=np.double)
     cdef np.ndarray[double, ndim=2] A_sys_view = A_sys
     
-    R_sys = np.zeros(card_I, dtype=np.double)
-    cdef np.ndarray[double, ndim=1] R_sys_view = R_sys
+    B_sys = np.zeros(card_I, dtype=np.double)
+    cdef np.ndarray[double, ndim=1] B_sys_view = B_sys
     
     for id_I in range(card_I):
         
         for id_K in range(card_K):
-            A_sys_view[id_K, id_I] = A[K[id_K], I[id_I]]
+            A_sys_view[id_I, id_K] = A[K[id_K], I[id_I]]
         
-        R_sys_view[id_I] = R[I[id_I]]
+        B_sys_view[id_I] = R[I[id_I]]
         for id_J in range(card_J):
-            R_sys_view[id_I] = R_sys_view[id_I] + A[J[id_J], I[id_I]]
+            B_sys_view[id_I] = B_sys_view[id_I] + A[J[id_J], I[id_I]]
+        
+        B_sys_view[id_I] = B_sys_view[id_I] * (-1)
     
     # solve
-    # cdef np.ndarray[double, ndim=1] v = np.linalg.solve(A_sys, -R_sys)
     cdef np.ndarray[double, ndim=1] v = np.zeros(n, dtype=np.double)
     
     return(v)
-    
+
+# cdef np.ndarray[double, ndim=1] gauss(int n, 
+                                       # np.ndarray[double, ndim=2] A, 
+                                      # np.ndarray[double, ndim=1] B)
 
 cdef int * bar(int n, int *K, int card_K):
     cdef Py_ssize_t i

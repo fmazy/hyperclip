@@ -1,8 +1,50 @@
 #!/usr/bin/env python3
+
+# Set this to True to enable building extensions using Cython.
+# Set it to False to build extensions from the C file (that
+# was previously created using Cython).
+# Set it to 'auto' to build with Cython if available, otherwise
+# from the C file.
+USE_CYTHON = 'auto'
+
+import sys
+
+import numpy
+
 from setuptools import setup
+from setuptools import Extension
 
 __version__ = "0.1.4"
 
+
+if USE_CYTHON:
+    try:
+        from Cython.Distutils import build_ext
+    except ImportError:
+        if USE_CYTHON=='auto':
+            USE_CYTHON=False
+        else:
+            raise
+
+cmdclass = { }
+ext_modules = [ ]
+
+if USE_CYTHON:
+    ext_modules += [
+        Extension("hyperclip.hyperfunc",
+                  sources=["cython/hyperfunc.pyx"],
+                  include_dirs=[numpy.get_include()],
+                  language="c++",
+                  ),
+    ]
+    cmdclass.update({ 'build_ext': build_ext })
+else:
+    ext_modules += [
+        Extension("hyperclip.hyperfunc", 
+                  sources=["cython/hyperfunc.cpp"],
+                  include_dirs=[numpy.get_include()],
+                  language="c++"),
+    ]
 
 setup(
     name='hyperclip',
@@ -20,6 +62,8 @@ setup(
     package_dir={
         'hyperclip' : 'hyperclip',
     },
+    cmdclass = cmdclass,
+    ext_modules=ext_modules,
     install_requires=[
             'numpy>=1.19.2',
         ],

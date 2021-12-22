@@ -32,16 +32,24 @@ for hyp in hyperplanes:
     y_1 = a * 1 + b
     
     plt.plot([0, 1], [y_0, y_1])
-
 plt.xlim([0,1])
 plt.ylim([0,1])
 
-
 hc = hyperclip.Hyperclip().set_hyperplanes(hyperplanes)
 
-vol = hc.volume()
+
+A = np.array([[-1.,   1,  0],
+              [ 0,    0,  1],
+              [-1,   -2, -1]]).T
+R = np.array([0.5, -0.5, 3])
+
+print('hyperfunc', hyperclip.hyperfunc.clipping_condition_A(3, 3, A, R))
+
+
+# hc.check()
+# vol = hc.volume()
 # print('10**6 MonteCarlo : ', id_pos_side.mean(), 'Hyperclip :', vol)
 
-plt.text(0.25,0.2, "10**6 MonteCarlo : "+str(round(id_pos_side.mean(),4)))
-plt.text(0.25,0.1, "Hyperclip : "+str(round(vol,4)))
-plt.show()
+# plt.text(0.25,0.2, "10**6 MonteCarlo : "+str(round(id_pos_side.mean(),4)))
+# plt.text(0.25,0.1, "Hyperclip : "+str(round(vol,4)))
+# plt.show()

@@ -3,7 +3,7 @@
 import numpy as np
 import itertools
 import math
-
+import hyperclip.hyperfunc
 
 class Hyperclip():
     """
@@ -98,6 +98,8 @@ class Hyperclip():
             The check result.
 
         """
+        
+        
         
         if not self._clipping_condition_A():
             if raise_error:

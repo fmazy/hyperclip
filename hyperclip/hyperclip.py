@@ -125,7 +125,8 @@ class Hyperclip():
 
         """
         if self._list_I is None:
-            print('Warning : The hyperclip object is not checked. The clipping condition (B) is checked.')
+            if self.verbose > -1:
+                print('Warning : The hyperclip object is not checked. The clipping condition (B) is checked.')
             if not self._clipping_condition_B():
                 raise(ValueError("The clipping condition (B) is not satisfied."))
         

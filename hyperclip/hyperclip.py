@@ -32,7 +32,7 @@ class Hyperclip():
         self._list_prod = None
         self._list_v_star = None
     
-    def set_A_r(self, A, R):
+    def set_A_R(self, A, R):
         """
         Set the hyperplanes coefficients through the A matrix and the R vector according to Cho and Kim notation.
 

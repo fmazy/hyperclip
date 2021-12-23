@@ -39,13 +39,13 @@ hc = hyperclip.Hyperclip().set_hyperplanes(hyperplanes)
 
 
 A = np.array([[-1.,   1,  0],
-              # [ 0,    0,  1],
+                [ 0,    0,  1],
               [-1,   -2, -1]]).T
 R = np.array([0.5, 
-              # -0.5, 
+                -0.5, 
               3])
 
-hc = hyperclip.Hyperclip().set_A_R(A, R)
+hc = hyperclip.Hyperclip(cython=True, verbose=-1).set_A_R(A, R)
 
 from time import time
 st = time()
@@ -58,15 +58,17 @@ st = time()
 # et = time()
 # print('A python', cond_A, et-st)
 
-st = time()
-cond_B = hyperclip.hyperfunc.clipping_condition_B_numpy(A, R)
-et = time()
-print('B cython', cond_B, et-st)
+print('B cond', hyperclip.hyperfunc.clipping_condition_B_numpy(A, R))
 
 st = time()
-cond_B = hc._clipping_condition_B()
+vol = hyperclip.hyperfunc.volume_numpy(A, R, check_A=True)
 et = time()
-print('B python', cond_B, et-st)
+print('vol cython', vol, et-st)
+
+st = time()
+vol = hc.volume()
+et = time()
+print('vol python', vol, et-st)
 
 # A = np.array([[-1],
               # [4.6*10**-310]])
@@ -78,3 +80,14 @@ print('B python', cond_B, et-st)
 # plt.text(0.25,0.2, "10**6 MonteCarlo : "+str(round(id_pos_side.mean(),4)))
 # plt.text(0.25,0.1, "Hyperclip : "+str(round(vol,4)))
 # plt.show()
+
+# A = np.array([[10,12.5,2.1],
+#               [4,5.5,3.2],
+#               [5.1,6.3,-5.4]])
+# # A = np.array([[1, 0, 2, -1],
+# #            [3, 0, 0, 5],
+# #            [2, 1, 4, -3],
+# #            [1, 0, 5, 0]]).astype(np.double)
+# print(np.linalg.det(A))
+
+# hyperclip.hyperfunc.determinant_numpy(A)

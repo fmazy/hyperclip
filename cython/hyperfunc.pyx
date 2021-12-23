@@ -45,6 +45,39 @@ cpdef bool clipping_condition_B_numpy(np.ndarray[double, ndim=2] A,
     
     return(clipping_condition_B(n, m, A_c, R_c))
 
+cpdef double volume_numpy(np.ndarray[double, ndim=2] A, 
+                          np.ndarray[double, ndim=1] R,
+                          bool check_A = True):
+    
+    cdef int n = A.shape[0]
+    cdef int m = A.shape[1]
+    
+    cdef double **A_c, *B_c
+    
+    A_c = convert_double_matrix_numpy_c(A)
+    R_c = convert_double_vector_numpy_c(R)    
+    
+    return(volume(n=n, m=m, A=A_c, R=R_c, check_A=check_A))
+
+cdef double volume(int n,
+                   int m,
+                   double **A,
+                   double *R,
+                   bool check_A = True):
+    
+    if check_A:
+        if not clipping_condition_A(n=n, m=m, A=A, R=R):
+            print('Error : clipping condition A unsatisfied. Return 1.0 as volume')
+            return(1.0)
+    
+    return(clipping_condition_B_and_volume(n = n, 
+                                           m = m, 
+                                           A = A, 
+                                           R = R,
+                                           return_volume = True))
+
+@cython.boundscheck(False)  # Deactivate bounds checking.
+@cython.wraparound(False)   # Deactivate negative indexing.
 cdef bool clipping_condition_A(int n, 
                                int m, 
                                double **A, 
@@ -59,12 +92,10 @@ cdef bool clipping_condition_A(int n,
     
     list_I = get_list_I(m - 1)
     
-    for card_I in range( (m-1) + 1):
+    for card_I in range((m-1) + 1):
         bc = binomial_coefficient(m-1, card_I)
         for q_I in range(bc):
             I = list_I[card_I][q_I]
-            # print('---s', 'card_I', card_I, 'q_I', q_I, 'bc=',bc)
-            # print('I', [I[p] for p in range(card_I)])
             
             card_K = card_I - 1
             list_K = get_list_K(n, card_K)
@@ -73,21 +104,15 @@ cdef bool clipping_condition_A(int n,
                 
             for q_K in range(binomial_coefficient(n, card_K)):
                 K = list_K[q_K]
-                K_bar = bar(n, K, card_I-1)
-                
-                # print('K', [K[r_K] for r_K in range(card_K)])
-                
-                # print('K_bar', [K_bar[r_K_bar] for r_K_bar in range(n - card_K)])
-                
+                K_bar = bar(n, K, card_I-1, sorted_lst=True)
+                                
                 for card_J in range( n - card_K + 1):
                     for q_J in range(binomial_coefficient(n - card_K, card_J)):
                         J = <int *> malloc(card_J * sizeof(int *))
                         for r_J in range(card_J):
                             J[r_J] = K_bar[list_J_indices[card_J][q_J][r_J]]
-                        # print('J :', [J[r_J] for r_J in range(card_J)])
                         
                         v = compute_vertex(n, A, R, I, card_I, J, card_J, K, card_K)
-                        # print('v :', [v[i_v] for i_v in range(n)])w
                         
                         if test_vertex(n, m, A, R, I, card_I, v):
                             # one vertex is solution !
@@ -95,30 +120,51 @@ cdef bool clipping_condition_A(int n,
                             # the condition is then unsatisfied
                             # False is therefore returned
                             return(False)
-            # print('---e')
     return(True)
 
 cdef bool clipping_condition_B(int n, 
                                 int m, 
                                 double **A, 
                                 double *R):
-    cdef Py_ssize_t card_I, q_I, q_K, j_K, j_K_bar, r_J
+    
+    cdef bool cond_B
+    
+    if clipping_condition_B_and_volume(n = n, 
+                                           m = m, 
+                                           A = A, 
+                                           R = R,
+                                           return_volume = False) == 1.0:
+        return(True)
+    else:
+        return(False)
+
+@cython.boundscheck(False)  # Deactivate bounds checking.
+@cython.wraparound(False)   # Deactivate negative indexing.
+@cython.cdivision(True) # Deactivate zero division checking.
+cdef double clipping_condition_B_and_volume(int n, 
+                                          int m, 
+                                          double **A, 
+                                          double *R,
+                                          bool return_volume=True):
+    cdef Py_ssize_t card_I, q_I, q_K, j_K, j_K_bar, r_J, id_I, id_t, i
     
     cdef int bc
     
     cdef int ***list_I, *I, **list_K, ***list_J_indices, *K, *K_bar, k, card_J, q_J, bc_J, *J, card_K
+    cdef int *I_union_m_remove_t, n_01, n_0
         
-    cdef double * v 
-    cdef double random
+    cdef double *v
+    cdef int *v_star, *v_01, *v_0, v_star_sum
+    cdef double denominator, vol, A_v_star_I, numerator, g_m_v
     
     list_I = get_list_I(m - 1)
     
-    for card_I in range( (m-1) + 1):
+    vol = 0.0
+    
+    for card_I in range((m -1) + 1):
         bc = binomial_coefficient(m-1, card_I)
         for q_I in range(bc):
             I = list_I[card_I][q_I]
-            # print('---s', 'card_I', card_I, 'q_I', q_I, 'bc=',bc)
-            # print('I', [I[p] for p in range(card_I)])
             
             card_K = card_I
             list_K = get_list_K(n, card_K)
@@ -127,78 +173,301 @@ cdef bool clipping_condition_B(int n,
                 
             for q_K in range(binomial_coefficient(n, card_K)):
                 K = list_K[q_K]
-                K_bar = bar(n, K, card_I-1)
-                
-                # print('K', [K[r_K] for r_K in range(card_K)])
-                
-                # print('K_bar', [K_bar[r_K_bar] for r_K_bar in range(n - card_K)])
+                K_bar = bar(n, K, card_I, sorted_lst=True)
                 
                 for card_J in range( n - card_K + 1):
                     for q_J in range(binomial_coefficient(n - card_K, card_J)):
                         J = <int *> malloc(card_J * sizeof(int *))
                         for r_J in range(card_J):
                             J[r_J] = K_bar[list_J_indices[card_J][q_J][r_J]]
-                        # print('J :', [J[r_J] for r_J in range(card_J)])
-                        # print('===')
                         v = compute_vertex(n, A, R, I, card_I, J, card_J, K, card_K)
                         
-                        
-                        # print(random)
-                        # print('I', [I[id_I] for id_I in range(card_I)])
-                        # print('J', [J[r_J] for r_J in range(card_J)])
-                        # print('K', [K[r_K] for r_K in range(card_K)])
-                        # print('v', [v[i] for i in range(n)])
-                        
                         if test_vertex(n, m, A, R, I, card_I, v):
-                            print('accepted')
-                            v_star = get_vertex_star(n, v)
-                            print('v :', [v[i_v] for i_v in range(n)])
-                            print('v_star :', [v_star[i_v] for i_v in range(1, v_star[0]+1)])
-                            # v_01 = np.delete(np.arange(self.n), v_star-1) + 1
+                            n_01 = count_01(n, v)
                             
-                            # prod = 1
-                            # for t in I:
-                            #     I_union_m_remove_t = list(I.copy())
-                            #     I_union_m_remove_t.append(self.m)
-                            #     I_union_m_remove_t.remove(t)
-                            #     I_union_m_remove_t = np.sort(I_union_m_remove_t)
-                                
-                            #     prod *= self._get_det_sub_A(v_star, I_union_m_remove_t)
+                            v_01 = get_vertex_01(n, v, n_01)
+                            v_star = bar(n, v_01, n_01, sorted_lst=True)
                             
-                            # for t in v_01:
-                            #     I_union_m = list(I.copy())
-                            #     I_union_m.append(self.m)
-                            #     I_union_m = np.sort(I_union_m)
+                            denominator = 1.0
+                            for id_t in range(card_I):
+                                I_union_m_remove_t = union_remove(I = I, 
+                                                                  card_I = card_I, 
+                                                                  m = m-1, 
+                                                                  t = I[id_t])
+                                                                
+                                denominator = denominator * get_det_sub_A(n = n, 
+                                                                          m = m, 
+                                                                          A = A, 
+                                                                          I = v_star, 
+                                                                          J = I_union_m_remove_t, 
+                                                                          card_I_and_J = card_I)
+                            
+                            for id_t in range(n_01):
+                                I_union_m = union(I=I,
+                                                  card_I = card_I,
+                                                  a = m-1)
                                 
-                            #     v_star_union_t = list(v_star.copy())
-                            #     v_star_union_t.append(t)
-                            #     v_star_union_t = np.sort(v_star_union_t)
+                                v_star_union_t = union(I = v_star,
+                                                        card_I = n - n_01,
+                                                        a = v_01[id_t])
+                                                                
+                                denominator = denominator * get_det_sub_A(n = n, 
+                                                                          m = m, 
+                                                                          A = A, 
+                                                                          I = v_star_union_t, 
+                                                                          J = I_union_m, 
+                                                                          card_I_and_J = card_I + 1)
                                 
-                            #     prod *= self._get_det_sub_A(v_star_union_t, I_union_m)
-            # print('---e')
-    return(True)
-
-cdef int * get_vertex_star(int n,
-                           double *v):
-    cdef Py_ssize_t i
-    cdef int n_v_star = 0
-    cdef int *v_star_too_long, *v_star
+                            if abs(denominator) < 0.0000001:
+                                if not return_volume:
+                                    return(0.0)
+                                else:
+                                    print('Error : clipping condition A unsatisfied. Return 1.0 as volume')
+                                    return(1.0)
+                            
+                            if return_volume:
+                                n_0 = count_0(n, v)
+                                
+                                v_star_sum = 0
+                                for i in range(n - n_01):
+                                    v_star_sum = v_star_sum + v_star[i] + 1
+                                
+                                g_m_v = R[m-1]
+                                for i in range(n):
+                                    g_m_v = g_m_v + A[i][m-1] * v[i]
+                                
+                                A_v_star_I = get_det_sub_A(n = n, 
+                                                            m = m, 
+                                                            A = A, 
+                                                            I = v_star, 
+                                                            J = I,
+                                                            card_I_and_J = card_I)
+                                
+                                numerator = (-1)**(n_0 + v_star_sum)
+                                numerator = numerator * (g_m_v * A_v_star_I)**n
+                                
+                                denominator = denominator * factorial(n) * abs(A_v_star_I)
+                                # print(A_v_star_I, card_I)
+                                vol = vol + numerator / denominator
     
-    v_star_too_long = <int *> malloc(n * sizeof(int *))
+    if return_volume:
+        return(vol)
+    else:
+        return(1.0)
+
+@cython.boundscheck(False)  # Deactivate bounds checking.
+@cython.wraparound(False)   # Deactivate negative indexing.
+cdef void getCofactor(double **A, 
+                      double **temp, 
+                      int p,
+                      int q, 
+                      int n):
+    cdef int i = 0
+    cdef int j = 0
+ 
+    # Looping for each element of the matrix
+    for row in range(n):
+        for col in range(n):
+            #  Copying into temporary matrix only those
+            #  element which are not in given row and
+            #  column
+            if row != p and col != q:
+                
+                temp[i][j] = A[row][col];
+                j = j + 1
+ 
+                # Row is filled, so increase row index and
+                # reset col index
+                if j == n - 1:
+                    j = 0
+                    i = i + 1
+ 
+# Recursive function for finding determinant of matrix.
+#   n is current dimension of A[][].
+@cython.boundscheck(False)  # Deactivate bounds checking.
+@cython.wraparound(False)   # Deactivate negative indexing.
+cdef double determinant(double **A, 
+                        int n):
+    # inspired by https://www.geeksforgeeks.org/determinant-of-a-matrix/
+    
+    cdef double D = 0 # Initialize result
+    
+    #  Base cases
+    if n == 0:
+        return(1.0)
+    elif n == 1:
+        return A[0][0]
+     
+    cdef double **temp # To store cofactors
+    temp = <double **> malloc(n * sizeof(double **))
+    for i in range(n):
+        temp[i] = <double *> malloc(n * sizeof(double *))
+    
+    cdef int sign = 1 # To store sign multiplier
+    
+    # Iterate for each element of first row
+    for f in range(n):
+        # Getting Cofactor of A[0][f]
+        getCofactor(A, temp, 0, f, n)
+        
+        D = D + sign * A[0][f] * determinant(temp, n - 1)
+     
+        # terms are to be added with alternate sign
+        sign = -sign
+     
+    return D
+
+@cython.boundscheck(False)  # Deactivate bounds checking.
+@cython.wraparound(False)   # Deactivate negative indexing.
+cdef double get_det_sub_A(int n,
+                          int m,
+                          double **A,
+                          int *I,
+                          int *J, 
+                          int card_I_and_J):
+    cdef double **sub_A
+    
+    sub_A = get_sub_A(n = n,
+                      m = m,
+                      A = A,
+                      I = I,
+                      card_I = card_I_and_J,
+                      J = J,
+                      card_J = card_I_and_J)
+    
+    
+    return(determinant(A=sub_A, n=card_I_and_J))
+
+@cython.boundscheck(False)  # Deactivate bounds checking.
+@cython.wraparound(False)   # Deactivate negative indexing.
+cdef double ** get_sub_A(int n,
+                         int m,
+                         double **A,
+                         int *I,
+                         int card_I,
+                         int *J,
+                         int card_J):
+    cdef Py_ssize_t id_I, id_J
+    cdef double **B
+    B = <double **> malloc(card_I * sizeof(card_I))
+    
+    for id_I in range(card_I):
+        B[id_I] = <double *> malloc(card_J * sizeof(card_J))
+        for id_J in range(card_J):
+            B[id_I][id_J] = A[I[id_I]][J[id_J]]
+    
+    return(B)
+
+@cython.boundscheck(False)  # Deactivate bounds checking.
+@cython.wraparound(False)   # Deactivate negative indexing.
+cdef int * union(int *I,
+                 int card_I,
+                 int a):
+    # union in the increasing order
+    cdef Py_ssize_t i
+    cdef int *I_u
+    cdef int shift
+    
+    I_u = <int *> malloc((card_I + 1) * sizeof(int *))
+    
+    shift = 0
+    for i in range(card_I):
+        if I[i] > a and shift == 0:
+            I_u[i] = a
+            shift = 1
+        I_u[i + shift] = I[i]
+    
+    if shift == 0:
+        I_u[card_I] = a
+    
+    return(I_u)
+
+@cython.boundscheck(False)  # Deactivate bounds checking.
+@cython.wraparound(False)   # Deactivate negative indexing.
+cdef int * union_remove(int *I,
+                  int card_I,
+                  int m,
+                  int t):
+    # nor order expectation
+    # because it is always used in a right way.
+    cdef Py_ssize_t i
+    cdef int *I_ur
+    cdef int shift
+    
+    I_ur = <int *> malloc(card_I * sizeof(int *))
+    
+    shift = 0
+    for i in range(card_I-1):
+        if I[i] == t:
+            shift = 1
+        I_ur[i] = I[i + shift]
+    
+    I_ur[card_I-1] = m
+    
+    return(I_ur)
+
+@cython.boundscheck(False)  # Deactivate bounds checking.
+@cython.wraparound(False)   # Deactivate negative indexing.
+cdef int count_01(int n, 
+                    double *v):
+    cdef Py_ssize_t i
+    cdef int n_01 = 0
     
     for i in range(n):
-        if v[i] != 0 and v[i] != 1:
-            v_star_too_long[n_v_star] = i
-            n_v_star = n_v_star + 1
-    
-    v_star = <int *> malloc((n_v_star + 1) * sizeof(int *))
-    
-    v_star[0] = n_v_star
-    for i in range(1, n_v_star + 1):
-        v_star[i] = v_star_too_long[i-1]
-        
-    return(v_star)
+        if v[i] == 0 or v[i] == 1:
+            n_01 = n_01 + 1
+    return(n_01)
 
+@cython.boundscheck(False)  # Deactivate bounds checking.
+@cython.wraparound(False)   # Deactivate negative indexing.
+cdef int * get_vertex_01(int n,
+                         double *v,
+                         int n_01):
+    cdef Py_ssize_t i
+    cdef int *v_01, i_v_01
+    
+    v_01 = <int *> malloc(n_01 * sizeof(int *))
+    
+    i_v_01 = 0
+    for i in range(n):
+        if v[i] == 0 or v[i] == 1:
+            v_01[i_v_01] = i
+            i_v_01 = i_v_01 + 1
+            
+    return(v_01)
+
+@cython.boundscheck(False)  # Deactivate bounds checking.
+@cython.wraparound(False)   # Deactivate negative indexing.
+cdef int count_0(int n, 
+                 double *v):
+    cdef Py_ssize_t i
+    cdef int n_0 = 0
+    
+    for i in range(n):
+        if v[i] == 0:
+            n_0 = n_0 + 1
+    return(n_0)
+
+@cython.boundscheck(False)  # Deactivate bounds checking.
+@cython.wraparound(False)   # Deactivate negative indexing.
+cdef int * get_vertex_0(int n,
+                        double *v,
+                        int n_0):
+    cdef Py_ssize_t i
+    cdef int *v_0, i_v_0
+    
+    v_0 = <int *> malloc(n_0 * sizeof(int *))
+    
+    i_v_0 = 0
+    for i in range(n):
+        if v[i] == 0:
+            v_0[i_v_0] = i
+            i_v_0 = i_v_0 + 1
+            
+    return(v_0)
+
+@cython.boundscheck(False)  # Deactivate bounds checking.
+@cython.wraparound(False)   # Deactivate negative indexing.
 cdef double ** convert_double_matrix_numpy_c(np.ndarray[double, ndim=2] A):
     cdef Py_ssize_t i, j
     cdef int n = A.shape[0]
@@ -214,6 +483,8 @@ cdef double ** convert_double_matrix_numpy_c(np.ndarray[double, ndim=2] A):
     
     return(A_c)
 
+@cython.boundscheck(False)  # Deactivate bounds checking.
+@cython.wraparound(False)   # Deactivate negative indexing.
 cdef double * convert_double_vector_numpy_c(np.ndarray[double, ndim=1] V):
     cdef Py_ssize_t i
     cdef int n = V.shape[0]
@@ -226,6 +497,8 @@ cdef double * convert_double_vector_numpy_c(np.ndarray[double, ndim=1] V):
     
     return(V_c)
 
+@cython.boundscheck(False)  # Deactivate bounds checking.
+@cython.wraparound(False)   # Deactivate negative indexing.
 cdef double * compute_vertex(int n, 
                              double **A, 
                              double *R, 
@@ -277,6 +550,8 @@ cdef double * compute_vertex(int n,
     
     return(v)
 
+@cython.boundscheck(False)  # Deactivate bounds checking.
+@cython.wraparound(False)   # Deactivate negative indexing.
 cdef bool test_vertex(int n,
                       int m,
                       double **A,
@@ -288,9 +563,8 @@ cdef bool test_vertex(int n,
     cdef int *I_bar
     cdef double g
     
+    I_bar = bar(m, I, card_I, sorted_lst=True)
     
-    I_bar = bar(m, I, card_I)
-        
     # H = 
     for id_I in range(card_I):
         g = R[I[id_I]]
@@ -301,8 +575,7 @@ cdef bool test_vertex(int n,
             return(False)
         
     # H +
-    for id_I in range(n - card_I - 1):
-        # print('I_bar[id_I]', I_bar[id_I])
+    for id_I in range(m - card_I):
         g = R[I_bar[id_I]]
         for i in range(n):
             g = g + A[i][I_bar[id_I]] * v[i]
@@ -310,7 +583,7 @@ cdef bool test_vertex(int n,
         if g < 0:
             return(False)
     
-    # # # Hypercube
+    # Hypercube
     for i in range(n):
         if v[i] < 0 or v[i] > 1:
             return(False)
@@ -376,6 +649,9 @@ cdef double * gauss(int n,
             AB[k][n] -= AB[k][i] * x[i]
     return x
 
+@cython.boundscheck(False)  # Deactivate bounds checking.
+@cython.wraparound(False)   # Deactivate negative indexing.
+@cython.cdivision(True) # Deactivate zero division checking.
 cdef double ** random_perturbation(int n, 
                                    double **A):
     cdef Py_ssize_t i, j
@@ -389,6 +665,8 @@ cdef double ** random_perturbation(int n,
     
     return(A_pert)
 
+@cython.boundscheck(False)  # Deactivate bounds checking.
+@cython.wraparound(False)   # Deactivate negative indexing.
 cdef double ** generate_AB(int n,
                            double **A,
                            double *B):
@@ -406,24 +684,37 @@ cdef double ** generate_AB(int n,
     
     return(AB)
 
-cdef int * bar(int n, int *K, int card_K):
-    cdef Py_ssize_t i
+@cython.boundscheck(False)  # Deactivate bounds checking.
+@cython.wraparound(False)   # Deactivate negative indexing.
+cdef int * bar(int n, int *K, int card_K, bool sorted_lst=False):
+    cdef Py_ssize_t i, j_K
     cdef int * K_bar
-    cdef int j_K, j_K_bar
+    cdef int j_K_bar
     cdef bool trigger
     K_bar = <int *> malloc((n - card_K) * sizeof(int *))
     
-    j_K = 0
     j_K_bar = 0
     for i in range(n):
         trigger = True
         for j_K in range(card_K):
             if K[j_K] == i:
                 trigger = False
-                break
-        if trigger :
+                if sorted_lst:
+                    break
+        if trigger:
             K_bar[j_K_bar] = i
             j_K_bar = j_K_bar + 1
+    # j_K = 0
+    # j_K_bar = 0
+    # for i in range(n):
+    #     trigger = True
+    #     for j_K in range(card_K):
+    #         if K[j_K] == i:
+    #             trigger = False
+    #             break
+    #     if trigger :
+    #         K_bar[j_K_bar] = i
+    #         j_K_bar = j_K_bar + 1
     
     return(K_bar)
 

@@ -23,8 +23,10 @@ class Hyperclip():
     """
     def __init__(self,
                  zero=10**-7,
+                 cython=True,
                  verbose=0):
         self.zero = zero
+        self.cython = cython
         self.verbose=verbose
         
         self._list_I = None
@@ -99,19 +101,30 @@ class Hyperclip():
 
         """
         
-        
-        
-        if not self._clipping_condition_A():
-            if raise_error:
-                raise(ValueError("The clipping condition (A) is not satisfied."))
-            else:
-                return(False)
-        
-        if not self._clipping_condition_B():
-            if raise_error:
-                raise(ValueError("The clipping condition (B) is not satisfied."))
-            else:
-                return(False)
+        if self.cython:
+            if not hyperclip.hyperfunc.clipping_condition_A_numpy(self.A, self.R):
+                if raise_error:
+                    raise(ValueError("The clipping condition (A) is not satisfied."))
+                else:
+                    return(False)
+            
+            if not hyperclip.hyperfunc.clipping_condition_B_numpy(self.A, self.R):
+                if raise_error:
+                    raise(ValueError("The clipping condition (B) is not satisfied."))
+                else:
+                    return(False)
+        else:
+            if not self._clipping_condition_A():
+                if raise_error:
+                    raise(ValueError("The clipping condition (A) is not satisfied."))
+                else:
+                    return(False)
+            
+            if not self._clipping_condition_B():
+                if raise_error:
+                    raise(ValueError("The clipping condition (B) is not satisfied."))
+                else:
+                    return(False)
         
         return(True)
     
@@ -126,6 +139,9 @@ class Hyperclip():
         None.
 
         """
+        if self.cython:
+            return(hyperclip.hyperfunc.volume_numpy(self.A, self.R))
+        
         if self._list_I is None:
             if self.verbose > -1:
                 print('Warning : The hyperclip object is not checked. The clipping condition (B) is checked.')
@@ -192,13 +208,11 @@ class Hyperclip():
         for I in list_I:
             
             I_bar = np.delete(np.arange(self.m) + 1, I-1)
-            # print(I, I_bar)
             
             list_K = self._get_list_K(len(I))
             
             list_J = self._get_list_J(list_K)
             
-            # print(I, 'F^'+str(len(I)-1), 'list_K', list_K, 'list_J', list_J)
             
             for id_k in range(len(list_K)):
                 K = list_K[id_k]
@@ -208,13 +222,10 @@ class Hyperclip():
                     
                     # compute vertex
                     v = self._compute_vertex(I, J, K)
-                    # print('IJK', I, J, K)
-                    # print(v)
                     if self._test_vertex(v, I, I_bar):
-                        
+                                                    
                         v_star = np.arange(self.n)[np.all((v != 0, v!=1), axis=0)] + 1
                         v_01 = np.delete(np.arange(self.n), v_star-1) + 1
-                        
                         prod = 1
                         for t in I:
                             I_union_m_remove_t = list(I.copy())
@@ -255,9 +266,7 @@ class Hyperclip():
         # sol computation
         v = np.zeros(self.n)
         v[J-1] = 1
-        
-        # print(sys_A, -sys_R)
-        
+                
         if len(K) > 0:
             try:
                 v[K-1] = np.linalg.solve(sys_A[:,:len(K)].T, -sys_R[:len(K)])
@@ -331,6 +340,8 @@ class Hyperclip():
         for id_i, i in enumerate(I-1):
             for id_j, j in enumerate(J-1):
                 B[id_i, id_j] = self.A[i,j]
+        
+        # print(B)
         return(B)
 
     def _get_det_sub_A(self, I, J):

@@ -39,12 +39,37 @@ hc = hyperclip.Hyperclip().set_hyperplanes(hyperplanes)
 
 
 A = np.array([[-1.,   1,  0],
-              [ 0,    0,  1],
+              # [ 0,    0,  1],
               [-1,   -2, -1]]).T
-R = np.array([0.5, -0.5, 3])
+R = np.array([0.5, 
+              # -0.5, 
+              3])
 
-print('hyperfunc', hyperclip.hyperfunc.clipping_condition_A(3, 3, A, R))
+hc = hyperclip.Hyperclip().set_A_R(A, R)
 
+from time import time
+st = time()
+# cond_A = hyperclip.hyperfunc.clipping_condition_A_numpy(A, R)
+# et = time()
+# print('A cython', cond_A, et-st)
+
+# st = time()
+# cond_A = hc._clipping_condition_A()
+# et = time()
+# print('A python', cond_A, et-st)
+
+st = time()
+cond_B = hyperclip.hyperfunc.clipping_condition_B_numpy(A, R)
+et = time()
+print('B cython', cond_B, et-st)
+
+st = time()
+cond_B = hc._clipping_condition_B()
+et = time()
+print('B python', cond_B, et-st)
+
+# A = np.array([[-1],
+              # [4.6*10**-310]])
 
 # hc.check()
 # vol = hc.volume()

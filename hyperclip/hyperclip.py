@@ -208,7 +208,8 @@ class Hyperclip():
                     
                     # compute vertex
                     v = self._compute_vertex(I, J, K)
-                    
+                    # print('IJK', I, J, K)
+                    # print(v)
                     if self._test_vertex(v, I, I_bar):
                         
                         v_star = np.arange(self.n)[np.all((v != 0, v!=1), axis=0)] + 1
@@ -254,7 +255,9 @@ class Hyperclip():
         # sol computation
         v = np.zeros(self.n)
         v[J-1] = 1
-                
+        
+        # print(sys_A, -sys_R)
+        
         if len(K) > 0:
             try:
                 v[K-1] = np.linalg.solve(sys_A[:,:len(K)].T, -sys_R[:len(K)])

@@ -17,9 +17,9 @@ id_pos_side = np.ones(X.shape[0])
 for hyp in hyperplanes:
     id_pos_side = np.all((id_pos_side, hyp.side(X)), axis=0)
 
-fig, axs = plt.subplots()
-axs.set_aspect('equal', 'box')
-plt.scatter(X[id_pos_side, 0], X[id_pos_side, 1], s=2, color='gray')
+# fig, axs = plt.subplots()
+# axs.set_aspect('equal', 'box')
+# plt.scatter(X[id_pos_side, 0], X[id_pos_side, 1], s=2, color='gray')
 
 for hyp in hyperplanes:
     sol = hyp.compute_n_solutions()
@@ -31,9 +31,9 @@ for hyp in hyperplanes:
     y_0 = b
     y_1 = a * 1 + b
     
-    plt.plot([0, 1], [y_0, y_1])
-plt.xlim([0,1])
-plt.ylim([0,1])
+    # plt.plot([0, 1], [y_0, y_1])
+# plt.xlim([0,1])
+# plt.ylim([0,1])
 
 hc = hyperclip.Hyperclip().set_hyperplanes(hyperplanes)
 
@@ -49,26 +49,26 @@ hc = hyperclip.Hyperclip(cython=True, verbose=-1).set_A_R(A, R)
 
 from time import time
 st = time()
-# cond_A = hyperclip.hyperfunc.clipping_condition_A_numpy(A, R)
-# et = time()
-# print('A cython', cond_A, et-st)
+vol = hc.volume()
+et = time()
+print('vol', vol, 'time', et-st)
 
 # st = time()
 # cond_A = hc._clipping_condition_A()
 # et = time()
 # print('A python', cond_A, et-st)
 
-print('B cond', hyperclip.hyperfunc.clipping_condition_B_numpy(A, R))
+# print('B cond', hyperclip.hyperfunc.clipping_condition_B_numpy(A, R))
 
-st = time()
-vol = hyperclip.hyperfunc.volume_numpy(A, R, check_A=True)
-et = time()
-print('vol cython', vol, et-st)
+# st = time()
+# vol = hyperclip.hyperfunc.volume_numpy(A, R, check_A=True)
+# et = time()
+# print('vol cython', vol, et-st)
 
-st = time()
-vol = hc.volume()
-et = time()
-print('vol python', vol, et-st)
+# st = time()
+# vol = hc.volume()
+# et = time()
+# print('vol python', vol, et-st)
 
 # A = np.array([[-1],
               # [4.6*10**-310]])

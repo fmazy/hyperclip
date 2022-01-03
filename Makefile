@@ -23,7 +23,7 @@ clean:
 	#git clean -fdX
 
 uninstall:
-	pip uninstall fastash
+	pip uninstall hyperclip
 
 deploy:
 	twine upload dist/*.tar.gz

@@ -6,7 +6,7 @@ cdef extern from "stdlib.h":
             int(*compar)(const void *, const void *)) nogil
 
 from libcpp.vector cimport vector
-from libc.stdlib cimport malloc, free, rand, RAND_MAX
+from libc.stdlib cimport malloc, free
 from libcpp cimport bool
 
 import cython
@@ -19,121 +19,80 @@ np.import_array()
 from cpython cimport array
 import array
 
-DTYPE = np.intc   
-
-cpdef bool clipping_condition_A_numpy(np.ndarray[double, ndim=2] A, 
-                                      np.ndarray[double, ndim=1] R):
-    cdef int n = A.shape[0]
-    cdef int m = A.shape[1]
-    
-    cdef double **A_c, *B_c
-    
-    A_c = convert_double_matrix_numpy_c(A)
-    R_c = convert_double_vector_numpy_c(R)
-    
-    return(clipping_condition_A(n, m, A_c, R_c))
-
-cpdef bool clipping_condition_B_numpy(np.ndarray[double, ndim=2] A, 
-                                      np.ndarray[double, ndim=1] R):
-    cdef int n = A.shape[0]
-    cdef int m = A.shape[1]
-    
-    cdef double **A_c, *B_c
-    
-    A_c = convert_double_matrix_numpy_c(A)
-    R_c = convert_double_vector_numpy_c(R)
-    
-    return(clipping_condition_B(n, m, A_c, R_c))
-
-cpdef double volume_numpy(np.ndarray[double, ndim=2] A, 
-                          np.ndarray[double, ndim=1] R,
-                          bool check_A = True):
-    
-    cdef int n = A.shape[0]
-    cdef int m = A.shape[1]
-    
-    cdef double **A_c, *B_c
-    
-    A_c = convert_double_matrix_numpy_c(A)
-    R_c = convert_double_vector_numpy_c(R)    
-    
-    return(volume(n=n, m=m, A=A_c, R=R_c, check_A=check_A))
-
-cdef double volume(int n,
-                   int m,
-                   double **A,
-                   double *R,
+cpdef double volume(double[:, :] A,
+                   double[:] R,
                    bool check_A = True):
     
     if check_A:
-        if not clipping_condition_A(n=n, m=m, A=A, R=R):
+        if not clipping_condition_A(A=A, R=R):
             print('Error : clipping condition A unsatisfied. Return 1.0 as volume')
             return(1.0)
     
-    return(clipping_condition_B_and_volume(n = n, 
-                                           m = m, 
-                                           A = A, 
+    return(clipping_condition_B_and_volume(A = A, 
                                            R = R,
                                            return_volume = True))
 
 @cython.boundscheck(False)  # Deactivate bounds checking.
 @cython.wraparound(False)   # Deactivate negative indexing.
-cdef bool clipping_condition_A(int n, 
-                               int m, 
-                               double **A, 
-                               double  *R):
-    cdef Py_ssize_t card_I, q_I, q_K, j_K, j_K_bar, r_J
+cpdef bool clipping_condition_A(double[:, :] A, 
+                               double[:] R):
+    cdef Py_ssize_t card_I, q_I, q_K, j_K, j_K_bar, r_J, i_free, j_free
     
-    cdef int bc
+    cdef int n = A.shape[0]
+    cdef int m = A.shape[1]
     
-    cdef int ***list_I, *I, **list_K, ***list_J_indices, *K, *K_bar, k, card_J, q_J, bc_J, *J, card_K
+    cdef int ***list_I, ***list_J_indices
+    # cdef int **list_K
+    cdef int *I, *K, *K_bar, *J
+    cdef int bc, k, card_J, q_J, bc_J, card_K
         
     cdef double * v 
+    
+    cdef int [:, :] pt = pascal_triangle(max(n+1, m-1))
+    cdef int [:, :] list_K
     
     list_I = get_list_I(m - 1)
     
     for card_I in range((m-1) + 1):
-        bc = binomial_coefficient(m-1, card_I)
+        bc = binomial_coefficient_in_pascal_triangle(m-1, card_I, pt)
         for q_I in range(bc):
             I = list_I[card_I][q_I]
             
             card_K = card_I - 1
-            list_K = get_list_K(n, card_K)
+            list_K = combinations_indices(n, card_K)
             
             list_J_indices = combination_indices_full(n - card_K, n - card_K)
                 
-            for q_K in range(binomial_coefficient(n, card_K)):
+            for q_K in range(binomial_coefficient_in_pascal_triangle(n, card_K, pt)):
                 K = list_K[q_K]
                 K_bar = bar(n, K, card_I-1, sorted_lst=True)
                                 
                 for card_J in range( n - card_K + 1):
-                    for q_J in range(binomial_coefficient(n - card_K, card_J)):
+                    for q_J in range(binomial_coefficient_in_pascal_triangle(n - card_K, card_J, pt)):
                         J = <int *> malloc(card_J * sizeof(int *))
                         for r_J in range(card_J):
                             J[r_J] = K_bar[list_J_indices[card_J][q_J][r_J]]
+                            
                         
                         v = compute_vertex(n, A, R, I, card_I, J, card_J, K, card_K)
+                                                
                         
                         if test_vertex(n, m, A, R, I, card_I, v):
                             # one vertex is solution !
                             # according to the clipping condition (A) definition
                             # the condition is then unsatisfied
                             # False is therefore returned
+                            
                             return(False)
+    
     return(True)
 
-cdef bool clipping_condition_B(int n, 
-                                int m, 
-                                double **A, 
-                                double *R):
-    
-    cdef bool cond_B
-    
-    if clipping_condition_B_and_volume(n = n, 
-                                           m = m, 
-                                           A = A, 
-                                           R = R,
-                                           return_volume = False) == 1.0:
+cpdef bool clipping_condition_B(double[:, :] A, 
+                               double[:] R):
+        
+    if clipping_condition_B_and_volume(A = A, 
+                                       R = R,
+                                       return_volume = False) == 1.0:
         return(True)
     else:
         return(False)
@@ -141,21 +100,25 @@ cdef bool clipping_condition_B(int n,
 @cython.boundscheck(False)  # Deactivate bounds checking.
 @cython.wraparound(False)   # Deactivate negative indexing.
 @cython.cdivision(True) # Deactivate zero division checking.
-cdef double clipping_condition_B_and_volume(int n, 
-                                          int m, 
-                                          double **A, 
-                                          double *R,
-                                          bool return_volume=True):
-    cdef Py_ssize_t card_I, q_I, q_K, j_K, j_K_bar, r_J, id_I, id_t, i
+cdef double clipping_condition_B_and_volume(double[:, :] A, 
+                                            double[:] R,
+                                            bool return_volume=True):
+    cdef Py_ssize_t card_I, q_I, q_K, j_K, j_K_bar, r_J, id_I, id_t, i, j
+    
+    cdef int n = A.shape[0]
+    cdef int m = A.shape[1]
     
     cdef int bc
     
-    cdef int ***list_I, *I, **list_K, ***list_J_indices, *K, *K_bar, k, card_J, q_J, bc_J, *J, card_K
+    cdef int ***list_I, *I, ***list_J_indices, *K_bar, k, card_J, q_J, bc_J, *J, card_K
     cdef int *I_union_m_remove_t, n_01, n_0
         
     cdef double *v
     cdef int *v_star, *v_01, *v_0, v_star_sum
     cdef double denominator, vol, A_v_star_I, numerator, g_m_v
+    
+    cdef int [:] K
+    cdef int [:, :] list_K
     
     list_I = get_list_I(m - 1)
     
@@ -167,7 +130,8 @@ cdef double clipping_condition_B_and_volume(int n,
             I = list_I[card_I][q_I]
             
             card_K = card_I
-            list_K = get_list_K(n, card_K)
+            # list_K = get_list_K(n, card_K)
+            list_K = combinations_indices(n, card_K)
             
             list_J_indices = combination_indices_full(n - card_K, n - card_K)
                 
@@ -222,7 +186,7 @@ cdef double clipping_condition_B_and_volume(int n,
                                 if not return_volume:
                                     return(0.0)
                                 else:
-                                    print('Error : clipping condition A unsatisfied. Return 1.0 as volume')
+                                    print('Error : clipping condition B unsatisfied. Return 1.0 as volume')
                                     return(1.0)
                             
                             if return_volume:
@@ -253,12 +217,12 @@ cdef double clipping_condition_B_and_volume(int n,
     if return_volume:
         return(vol)
     else:
-        return(1.0)
+        return(1.0) # clipping condition B satisfied.
 
 @cython.boundscheck(False)  # Deactivate bounds checking.
 @cython.wraparound(False)   # Deactivate negative indexing.
-cdef void getCofactor(double **A, 
-                      double **temp, 
+cdef void getCofactor(double[:, :] A, 
+                      double[:, :] temp, 
                       int p,
                       int q, 
                       int n):
@@ -286,7 +250,7 @@ cdef void getCofactor(double **A,
 #   n is current dimension of A[][].
 @cython.boundscheck(False)  # Deactivate bounds checking.
 @cython.wraparound(False)   # Deactivate negative indexing.
-cdef double determinant(double **A, 
+cdef double determinant(double[:, :] A, 
                         int n):
     # inspired by https://www.geeksforgeeks.org/determinant-of-a-matrix/
     
@@ -298,10 +262,11 @@ cdef double determinant(double **A,
     elif n == 1:
         return A[0][0]
      
-    cdef double **temp # To store cofactors
-    temp = <double **> malloc(n * sizeof(double **))
-    for i in range(n):
-        temp[i] = <double *> malloc(n * sizeof(double *))
+    # cdef double **temp # To store cofactors
+    # temp = <double **> malloc(n * sizeof(double **))
+    cdef double[:, :] temp = np.zeros((n, n), dtype=np.double)
+    # for i in range(n):
+        # temp[i] = <double *> malloc(n * sizeof(double *))
     
     cdef int sign = 1 # To store sign multiplier
     
@@ -321,11 +286,11 @@ cdef double determinant(double **A,
 @cython.wraparound(False)   # Deactivate negative indexing.
 cdef double get_det_sub_A(int n,
                           int m,
-                          double **A,
+                          double[:, :] A,
                           int *I,
                           int *J, 
                           int card_I_and_J):
-    cdef double **sub_A
+    cdef double[:, :] sub_A
     
     sub_A = get_sub_A(n = n,
                       m = m,
@@ -340,19 +305,17 @@ cdef double get_det_sub_A(int n,
 
 @cython.boundscheck(False)  # Deactivate bounds checking.
 @cython.wraparound(False)   # Deactivate negative indexing.
-cdef double ** get_sub_A(int n,
-                         int m,
-                         double **A,
-                         int *I,
-                         int card_I,
-                         int *J,
-                         int card_J):
+cdef double[:, :] get_sub_A(int n,
+                                          int m,
+                                          double[:, :] A,
+                                          int *I,
+                                          int card_I,
+                                          int *J,
+                                          int card_J):
     cdef Py_ssize_t id_I, id_J
-    cdef double **B
-    B = <double **> malloc(card_I * sizeof(card_I))
+    cdef double[:, :] B = np.zeros((card_I, card_J), dtype=np.double)
     
     for id_I in range(card_I):
-        B[id_I] = <double *> malloc(card_J * sizeof(card_J))
         for id_J in range(card_J):
             B[id_I][id_J] = A[I[id_I]][J[id_J]]
     
@@ -468,7 +431,7 @@ cdef int * get_vertex_0(int n,
 
 @cython.boundscheck(False)  # Deactivate bounds checking.
 @cython.wraparound(False)   # Deactivate negative indexing.
-cdef double ** convert_double_matrix_numpy_c(np.ndarray[double, ndim=2] A):
+cdef double ** convert_double_matrix_numpy_c(double[:, :] A):
     cdef Py_ssize_t i, j
     cdef int n = A.shape[0]
     cdef int m = A.shape[1]
@@ -477,7 +440,7 @@ cdef double ** convert_double_matrix_numpy_c(np.ndarray[double, ndim=2] A):
     A_c = <double **> malloc(n * sizeof(double **))
         
     for i in range(n):
-        A_c[i] = <double *> malloc(n * sizeof(double *))
+        A_c[i] = <double *> malloc(m * sizeof(double *))
         for j in range(m):
             A_c[i][j] = A[i][j]
     
@@ -485,7 +448,7 @@ cdef double ** convert_double_matrix_numpy_c(np.ndarray[double, ndim=2] A):
 
 @cython.boundscheck(False)  # Deactivate bounds checking.
 @cython.wraparound(False)   # Deactivate negative indexing.
-cdef double * convert_double_vector_numpy_c(np.ndarray[double, ndim=1] V):
+cdef double * convert_double_vector_numpy_c(double[:] V):
     cdef Py_ssize_t i
     cdef int n = V.shape[0]
     cdef double *V_c
@@ -500,8 +463,8 @@ cdef double * convert_double_vector_numpy_c(np.ndarray[double, ndim=1] V):
 @cython.boundscheck(False)  # Deactivate bounds checking.
 @cython.wraparound(False)   # Deactivate negative indexing.
 cdef double * compute_vertex(int n, 
-                             double **A, 
-                             double *R, 
+                             double[:, :] A, 
+                             double[:] R, 
                              int *I,
                              int card_I,
                              int *J,
@@ -554,8 +517,8 @@ cdef double * compute_vertex(int n,
 @cython.wraparound(False)   # Deactivate negative indexing.
 cdef bool test_vertex(int n,
                       int m,
-                      double **A,
-                      double *R,
+                      double[:, :] A,
+                      double[:] R,
                       int *I,
                       int card_I,
                       double *v):
@@ -651,22 +614,6 @@ cdef double * gauss(int n,
 
 @cython.boundscheck(False)  # Deactivate bounds checking.
 @cython.wraparound(False)   # Deactivate negative indexing.
-@cython.cdivision(True) # Deactivate zero division checking.
-cdef double ** random_perturbation(int n, 
-                                   double **A):
-    cdef Py_ssize_t i, j
-    cdef double **A_pert
-    A_pert = <double **> malloc(n * sizeof(double **))
-    
-    for i in range(n):
-        A_pert[i] = <double *> malloc(n * sizeof(double *))
-        for j in range(n):
-            A_pert[i][j] = A[i][j] + (rand() / (RAND_MAX + 1.0) * 2 - 1) * 0.000001
-    
-    return(A_pert)
-
-@cython.boundscheck(False)  # Deactivate bounds checking.
-@cython.wraparound(False)   # Deactivate negative indexing.
 cdef double ** generate_AB(int n,
                            double **A,
                            double *B):
@@ -725,13 +672,6 @@ cdef int *** get_list_I(int m):
     
     return(list_I)
 
-cdef int ** get_list_K(int n, int card):
-    
-    cdef int **list_K
-    list_K = combinations_indices(n, card)
-    
-    return(list_K)
-
 # cdef int ** get_list_J(n, list_K, card_K):
 #     cdef int *** list_J
     
@@ -755,12 +695,16 @@ cdef int ** get_list_K(int n, int card):
 
 @cython.boundscheck(False)  # Deactivate bounds checking.
 @cython.wraparound(False)   # Deactivate negative indexing.
-cdef int *** combination_indices_full(int n, int k):
+cdef int [:] combination_indices_full(int n, int k):
     cdef Py_ssize_t i, j, p
-    cdef int ***ci_full, **ci, bc
+    cdef int bc
+    
+    cdef int [:, :] ci
+    
+    
     
     ci_full = <int ***> malloc((k + 1) * sizeof(int ***))
-    
+        
     for i in range(k+1):
         ci = combinations_indices(n, i)
         
@@ -774,27 +718,28 @@ cdef int *** combination_indices_full(int n, int k):
             for p in range(i):
                 ci_full[i][j][p] = ci[j][p]
             
-    
     return(ci_full)
             
 @cython.boundscheck(False)  # Deactivate bounds checking.
 @cython.wraparound(False)   # Deactivate negative indexing.
-cdef int ** combinations_indices(int n, int k):
+cdef int [:, :] combinations_indices(int n, int k):
     cdef Py_ssize_t i, j
-    cdef int **ci, *pool, *indices, id_ci, bc
+    cdef int *pool, *indices, id_ci, bc
     
     # compute the binomial coefficient
     # i.e. the number of combinations
     bc = binomial_coefficient(n, k)
     
-    ci = <int **> malloc(bc * sizeof(int*))
+    cdef int [:, :] ci = np.zeros((bc, k), dtype=np.intc)
+        
+    if bc == 0:
+        return(ci)
     
     pool = list_range(n)
     
     indices = list_range(k)
     
     id_ci = 0
-    ci[id_ci] = <int *> malloc(k * sizeof(int))
     for i in range(k):
         ci[id_ci][i] = indices[i]
     id_ci = id_ci + 1
@@ -809,7 +754,6 @@ cdef int ** combinations_indices(int n, int k):
         for j in range(i+1, k):
             indices[j] = indices[j-1] + 1
             
-        ci[id_ci] = <int *> malloc(k * sizeof(int))
         for i in range(k):
             ci[id_ci][i] = indices[i]
         id_ci = id_ci + 1
@@ -825,7 +769,29 @@ cdef int factorial(int n):
 
 @cython.cdivision(True)
 cdef int binomial_coefficient(int n, int k):
+    # print(n, k)
+    if k < 0:
+        return(0)
+    if n-k < 0:
+        return(0)
     return(factorial(n) / (factorial(k) * factorial(n-k)))
+
+cdef int [:, :] pascal_triangle(int n):
+    cdef Py_ssize_t i
+    cdef int[:, :] apt = np.zeros((n+1, n+1), dtype=np.intc)
+    for i in range(n+1):
+        for j in range(i+1):
+            apt[i][j] = binomial_coefficient(i, j)
+    return(apt)
+
+cdef int binomial_coefficient_in_pascal_triangle(int n, 
+                                                 int k,
+                                                 int[:, :] pt):
+    if k < 0:
+        return(0)
+    if n-k < 0:
+        return(0)
+    return(pt[n][k])
 
 cdef int * list_range(int n):
     cdef Py_ssize_t i

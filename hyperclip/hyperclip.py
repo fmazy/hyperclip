@@ -102,13 +102,17 @@ class Hyperclip():
         """
         
         if self.cython:
-            if not hyperclip.hyperfunc.clipping_condition_A(self.A, self.R):
+            if not hyperclip.hyperfunc.clipping_condition_A(A = self.A, 
+                                                            R = self.R,
+                                                            zero = self.zero):
                 if raise_error:
                     raise(ValueError("The clipping condition (A) is not satisfied."))
                 else:
                     return(False)
             
-            if not hyperclip.hyperfunc.clipping_condition_B(self.A, self.R):
+            if not hyperclip.hyperfunc.clipping_condition_B(A = self.A,
+                                                            R = self.R,
+                                                            zero = self.zero):
                 if raise_error:
                     raise(ValueError("The clipping condition (B) is not satisfied."))
                 else:
@@ -140,7 +144,10 @@ class Hyperclip():
 
         """
         if self.cython:
-            return(hyperclip.hyperfunc.volume(self.A, self.R, check_A=False))
+            return(hyperclip.hyperfunc.volume(A = self.A,
+                                              R = self.R, 
+                                              check_A=False,
+                                              zero=self.zero))
         
         if self._list_I is None:
             if self.verbose > -1:

@@ -85,6 +85,9 @@ cpdef double [:] volumes(double[:, :] A,
         
     return(vols)
 
+@cython.boundscheck(False)  # Deactivate bounds checking.
+@cython.wraparound(False)   # Deactivate negative indexing.
+@cython.cdivision(True) # Deactivate zero division checking.
 cdef double * inf_distances_to_hyperplanes(double[:, :] A, 
                                            double[:] R,
                                            double[:] x,

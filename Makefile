@@ -1,4 +1,4 @@
-.PHONY: build dist redist install install-from-source clean uninstall
+.PHONY: build dist redist install install-from-source clean uninstall deploy annotate develop
 
 build:
 	python setup.py build

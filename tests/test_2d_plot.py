@@ -45,7 +45,11 @@ R = np.array([0.5,
                 -0.5, 
               3])
 
-hc = hyperclip.Hyperclip(cython=True, verbose=-1).set_A_R(A, R)
+A = np.array([[0.25585178874659287],
+              [0.022416578071991308]])
+R = np.array([2.5814930867384747])
+
+hc = hyperclip.Hyperclip(cython=True, verbose=1).set_A_R(A, R)
 
 from time import time
 st = time()

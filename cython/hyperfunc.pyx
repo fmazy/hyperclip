@@ -30,7 +30,8 @@ cpdef double volume(double[:, :] A,
 cpdef double [:] volumes(double[:, :] A,
                          double[:] R,
                          double [:, :] X,
-                         double h):
+                         double h,
+                         double zero = 0.0000001):
     
     cdef Py_ssize_t i, i_hyp, j
     
@@ -79,7 +80,8 @@ cpdef double [:] volumes(double[:, :] A,
             vols[i] = volume_according_m(A=A_x,
                                          R=R_x,
                                          m=m_x,
-                                         check_A=False)
+                                         check_A=False,
+                                         zero=zero)
         
         free(dist_to_hyp)
         
@@ -120,7 +122,7 @@ cpdef double volume_according_m(double[:, :] A,
                                 double zero = 0.0000001):
     if check_A:
         if not clipping_condition_A_according_m(A=A, R=R, m=m, zero=zero):
-            print('Error : clipping condition A unsatisfied. Return 1.0 as volume')
+            # print('Error : clipping condition A unsatisfied. Return 1.0 as volume')
             return(1.0)
     
     return(clipping_condition_B_and_volume(A = A, 
@@ -352,7 +354,7 @@ cdef double clipping_condition_B_and_volume(double[:, :] A,
                                 if not return_volume:
                                     return(0.0)
                                 else:
-                                    print('Error : clipping condition B unsatisfied. Return 1.0 as volume')
+                                    # print('Error : clipping condition B unsatisfied. Return 1.0 as volume')
                                     return(1.0)
                             
                             if return_volume:

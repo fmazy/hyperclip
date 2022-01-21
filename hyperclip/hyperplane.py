@@ -114,9 +114,9 @@ class Hyperplane():
             The boolean array indicating the side of each points. If True, the 
             element is considered to belong to the positive side.
         """
-        norm_vec = np.dot(X, self.a) + self.r
-
-        return (norm_vec > 0)
+        g = np.dot(X, self.a) + self.r + self.zero
+                
+        return (g >= 0)
     
     def affine_transform(self, translation, scale, inplace=False):
         """
